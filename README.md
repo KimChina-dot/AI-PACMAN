@@ -17,7 +17,7 @@ AI全能客户端 - 对话/绘画/会议室，漫画风格，开箱即用
 
 ## 🚀 在线体验
 
-**GitHub Pages**：`https://KimChina-dot.github.io/AI-PACMAN`
+**GitHub Pages**：`https://github.com/KimChina-dot/AI-PACMAN`
 
 ## 📦 本地运行
 
