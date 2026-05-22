@@ -17,11 +17,11 @@ AI全能客户端 - 对话/绘画/会议室，漫画风格，开箱即用
 
 ## 🚀 在线体验
 
-**GitHub Pages**：`https://你的用户名.github.io/AI-PACMAN`
+**GitHub Pages**：`https://KimChina-dot.github.io/AI-PACMAN`
 
 ## 📦 本地运行
 
 ```bash
-git clone https://github.com/你的用户名/AI-PACMAN.git
+git clone https://github.com/KimChina-dot/AI-PACMAN.git
 cd AI-PACMAN
 # 浏览器打开 index.html
