@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AI 绘画工具 - 输入Key即可生成</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #FFD700, #FF6B6B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #888;
+        }
+
+        /* 卡片 */
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            color: #FFD700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 输入框 */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        .input-group input, 
+        .input-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .input-group input:focus, 
+        .input-group textarea:focus {
+            border-color: #FFD700;
+            background: rgba(0,0,0,0.6);
+        }
+
+        .input-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        /* 尺寸选择 */
+        .size-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .size-option {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .size-option.selected {
+            background: #FFD700;
+            color: #1a1a2e;
+        }
+
+        /* 生成按钮 */
+        .generate-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #FFD700, #FF8C00);
+            border: none;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 8px;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(255,215,0,0.3);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        /* 结果区域 */
+        .result-area {
+            margin-top: 24px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-image {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            display: none;
+        }
+
+        .result-image.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,215,0,0.2);
+            border-top-color: #FFD700;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 错误提示 */
+        .error-msg {
+            background: rgba(255,68,68,0.2);
+            border: 1px solid #ff4444;
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: #ff8888;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .error-msg.show {
+            display: block;
+        }
+
+        /* 历史记录 */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            background: rgba(255,215,0,0.1);
+        }
+
+        .history-prompt {
+            font-size: 0.85rem;
+            color: #ddd;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-time {
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        /* 两栏布局 */
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* API Key 显示切换 */
+        .key-wrapper {
+            position: relative;
+        }
+
+        .toggle-key {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .key-hint {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .clear-btn {
+            background: none;
+            border: 1px solid rgba(255,68,68,0.5);
+            color: #ff8888;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: 12px;
+        }
+
+        .clear-btn:hover {
+            background: rgba(255,68,68,0.1);
+        }
+
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: #555;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 AI 绘画工具</h1>
+            <p>输入 API Key 和提示词，AI 帮你生成图片</p>
+        </div>
+
+        <div class="two-columns">
+            <!-- 左侧：输入区 -->
+            <div>
+                <div class="card">
+                    <div class="card-title">
+                        <span>🔑</span> API 配置
+                    </div>
+                    <div class="input-group">
+                        <label>API Key</label>
+                        <div class="key-wrapper">
+                            <input type="password" id="apiKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" value="">
+                            <button class="toggle-key" onclick="toggleKeyVisibility()">👁️</button>
+                        </div>
+                        <div class="key-hint">支持 OpenAI 格式 API Key（如 DeepSeek、智谱、OpenAI 等）</div>
+                    </div>
+                    <div class="input-group">
+                        <label>API Base URL（可选）</label>
+                        <input type="text" id="baseUrl" placeholder="https://api.openai.com/v1 或留空使用默认">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span>✨</span> 绘画设置
+                    </div>
+                    <div class="input-group">
+                        <label>🎨 提示词（描述你想要的画面）</label>
+                        <textarea id="prompt" placeholder="例如：一只可爱的橘猫，坐在窗台上，阳光洒进来，梦幻风格，高清"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>📐 画面尺寸</label>
+                        <div class="size-row" id="sizeGroup">
+                            <div class="size-option selected" data-size="1024x1024">1:1 (1024x1024)</div>
+                            <div class="size-option" data-size="1024x1792">竖版 9:16 (1024x1792)</div>
+                            <div class="size-option" data-size="1792x1024">横版 16:9 (1792x1024)</div>
+                            <div class="size-option" data-size="512x512">512x512（快速）</div>
+                        </div>
+                    </div>
+                    <button class="generate-btn" id="generateBtn" onclick="generateImage()">🚀 开始生成</button>
+                </div>
+
+                <!-- 示例提示词 -->
+                <div class="card">
+                    <div class="card-title">
+                        <span>💡</span> 示例提示词（点击试用）
+                    </div>
+                    <div class="tech-tags" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <span class="tag" onclick="setPrompt('一只可爱的柴犬，戴着红色围巾，雪地里奔跑，电影质感')">🐕 柴犬雪景</span>
+                        <span class="tag" onclick="setPrompt('赛博朋克城市，霓虹灯光，雨夜，未来感，4K')">🌃 赛博朋克</span>
+                        <span class="tag" onclick="setPrompt('二次元少女，樱花树下，日系动漫风格，柔光')">🌸 日系动漫</span>
+                        <span class="tag" onclick="setPrompt('水墨山水画，中国传统风格，远山，云雾')">🏔️ 水墨山水</span>
+                        <span class="tag" onclick="setPrompt('一只猫娘，女仆装，可爱，精致，动漫风格')">🐱 猫娘</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：结果区 + 历史 -->
+            <div>
+                <div class="card">
+                    <div class="card-title">
+                        <span>🖼️</span> 生成结果
+                        <button class="clear-btn" onclick="clearHistory()" style="margin-left: auto;">清空历史</button>
+                    </div>
+                    <div class="result-area">
+                        <div class="loading" id="loading">
+                            <div class="spinner"></div>
+                            <div>AI 正在创作中...</div>
+                        </div>
+                        <img id="resultImage" class="result-image" alt="生成的图片">
+                        <div class="error-msg" id="errorMsg"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        <span>📜</span> 历史记录
+                    </div>
+                    <div class="history-list" id="historyList">
+                        <div style="text-align: center; color: #666; padding: 20px;">暂无历史记录</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🎨 支持 OpenAI 格式 API | 绘画模型自动识别 | 图片可长按保存</p>
+            <p style="margin-top: 8px;">⚡ 生成的图片不会自动保存到服务器，刷新页面即清空</p>
+        </div>
+    </div>
+
+    <script>
+        // 存储历史记录
+        let history = [];
+
+        // 尺寸选择
+        let currentSize = '1024x1024';
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            // 加载保存的 API Key
+            const savedKey = localStorage.getItem('draw_api_key');
+            const savedUrl = localStorage.getItem('draw_api_url');
+            if (savedKey) document.getElementById('apiKey').value = savedKey;
+            if (savedUrl) document.getElementById('baseUrl').value = savedUrl;
+
+            // 加载历史
+            const savedHistory = localStorage.getItem('draw_history');
+            if (savedHistory) {
+                try {
+                    history = JSON.parse(savedHistory);
+                    renderHistory();
+                } catch(e) {}
+            }
+
+            // 尺寸选择事件
+            document.querySelectorAll('.size-option').forEach(opt => {
+                opt.addEventListener('click', () => {
+                    document.querySelectorAll('.size-option').forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    currentSize = opt.dataset.size;
+                });
+            });
+        });
+
+        // 切换 API Key 可见性
+        function toggleKeyVisibility() {
+            const input = document.getElementById('apiKey');
+            if (input.type === 'password') {
+                input.type = 'text';
+                document.querySelector('.toggle-key').textContent = '🙈';
+            } else {
+                input.type = 'password';
+                document.querySelector('.toggle-key').textContent = '👁️';
+            }
+        }
+
+        // 设置提示词
+        function setPrompt(text) {
+            document.getElementById('prompt').value = text;
+        }
+
+        // 渲染历史
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            if (!history.length) {
+                container.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">暂无历史记录</div>';
+                return;
+            }
+            container.innerHTML = history.slice().reverse().map(item => `
+                <div class="history-item" onclick="rerunPrompt('${escapeHtml(item.prompt)}')">
+                    <div class="history-prompt">${escapeHtml(item.prompt.substring(0, 60))}${item.prompt.length > 60 ? '...' : ''}</div>
+                    <div class="history-time">${item.time} | ${item.size}</div>
+                </div>
+            `).join('');
+        }
+
+        // 重新运行历史提示词
+        function rerunPrompt(prompt) {
+            document.getElementById('prompt').value = prompt;
+            generateImage();
+        }
+
+        // 保存历史
+        function saveToHistory(prompt, size, imageUrl) {
+            history.unshift({
+                prompt: prompt,
+                size: size,
+                time: new Date().toLocaleString(),
+                imageUrl: imageUrl
+            });
+            // 最多保存20条
+            if (history.length > 20) history.pop();
+            localStorage.setItem('draw_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        // 清空历史
+        function clearHistory() {
+            if (confirm('确定清空所有历史记录吗？')) {
+                history = [];
+                localStorage.removeItem('draw_history');
+                renderHistory();
+            }
+        }
+
+        // HTML 转义
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        // 生成图片
+        async function generateImage() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            let baseUrl = document.getElementById('baseUrl').value.trim();
+            const prompt = document.getElementById('prompt').value.trim();
+
+            if (!apiKey) {
+                showError('请填写 API Key');
+                return;
+            }
+            if (!prompt) {
+                showError('请填写提示词');
+                return;
+            }
+
+            // 保存 API Key
+            localStorage.setItem('draw_api_key', apiKey);
+            if (baseUrl) localStorage.setItem('draw_api_url', baseUrl);
+
+            // 如果没有填 baseUrl，使用默认
+            if (!baseUrl) {
+                baseUrl = 'https://api.openai.com/v1';
+            }
+            // 确保不以斜杠结尾
+            baseUrl = baseUrl.replace(/\/$/, '');
+
+            // 解析尺寸
+            const [width, height] = currentSize.split('x').map(Number);
+
+            // UI 状态
+            const btn = document.getElementById('generateBtn');
+            const loading = document.getElementById('loading');
+            const resultImg = document.getElementById('resultImage');
+            const errorDiv = document.getElementById('errorMsg');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ 生成中...';
+            loading.classList.add('show');
+            resultImg.classList.remove('show');
+            errorDiv.classList.remove('show');
+
+            try {
+                // 构建请求体（兼容 OpenAI / DALL-E 格式）
+                const requestBody = {
+                    model: 'dall-e-3',  // 或 dall-e-2
+                    prompt: prompt,
+                    n: 1,
+                    size: currentSize,
+                    quality: 'standard'
+                };
+
+                const response = await fetch(`${baseUrl}/images/generations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    let errMsg = `HTTP ${response.status}`;
+                    try {
+                        const errData = await response.json();
+                        errMsg += `: ${errData.error?.message || JSON.stringify(errData)}`;
+                    } catch(e) {
+                        errMsg += `: ${response.statusText}`;
+                    }
+                    throw new Error(errMsg);
+                }
+
+                const data = await response.json();
+                const imageUrl = data.data[0].url;
+
+                // 显示图片
+                resultImg.src = imageUrl;
+                resultImg.classList.add('show');
+
+                // 保存到历史
+                saveToHistory(prompt, currentSize, imageUrl);
+
+            } catch (error) {
+                console.error('生成失败:', error);
+                showError(error.message || '生成失败，请检查 API Key 和网络');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 开始生成';
+                loading.classList.remove('show');
+            }
+        }
+
+        function showError(msg) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.textContent = msg;
+            errorDiv.classList.add('show');
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+    </script>
+
+    <style>
+        .tag {
+            display: inline-block;
+            padding: 6px 12px;
+            background: rgba(255,215,0,0.15);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #FFD700;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,215,0,0.3);
+        }
+        .tag:hover {
+            background: rgba(255,215,0,0.3);
+            transform: scale(1.02);
+        }
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+    </style>
+</body>
+</html>
